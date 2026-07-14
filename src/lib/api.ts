@@ -56,6 +56,7 @@ export async function fetchUsage(): Promise<UsageResponse> {
  */
 export async function requestExplain(text: string, query?: string): Promise<string> {
   const baseUrl = getApiBaseUrl();
+  // FIXED: Vercel ke bajaye Render backend URL use kiya
   const response = await fetch(`${baseUrl}/api/explain`, {
     method: "POST",
     headers: {
@@ -84,6 +85,7 @@ export async function requestExplain(text: string, query?: string): Promise<stri
  */
 export async function requestGlossary(text: string): Promise<GlossaryItem[]> {
   const baseUrl = getApiBaseUrl();
+  // FIXED: Vercel ke bajaye Render backend URL use kiya
   const response = await fetch(`${baseUrl}/api/glossary`, {
     method: "POST",
     headers: {
@@ -112,6 +114,7 @@ export async function requestGlossary(text: string): Promise<GlossaryItem[]> {
  */
 export async function requestFlashcards(text: string): Promise<FlashcardItem[]> {
   const baseUrl = getApiBaseUrl();
+  // FIXED: Vercel ke bajaye Render backend URL use kiya
   const response = await fetch(`${baseUrl}/api/flashcards`, {
     method: "POST",
     headers: {
