@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Caveat:wght@400..700&family=Inter:wght@400;500;600;700&family=Special+Elite&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", sans-serif;
+  --font-mono: "Special Elite", monospace;
+  --font-handwriting: "Caveat", cursive;
+
+  --color-paper: #EEEAE0;
+  --color-ink-navy: #1F2C4C;
+  --color-ink-blue: #3C4A6E;
+  --color-margin-red: #B33A3A;
+  --color-marigold: #E2A63B;
+  --color-marigold-hover: #C58E2E;
+  --color-stamp-green: #3F6B4A;
+
+  --shadow-card-shadow: 0 4px 20px -2px rgba(31, 44, 76, 0.08);
+}
+
+:root {
+  --paper: #EEEAE0;
+  --ink-navy: #1F2C4C;
+  --ink-blue: #3C4A6E;
+  --margin-red: #B33A3A;
+  --marigold: #E2A63B;
+  --marigold-hover: #C58E2E;
+  --stamp-green: #3F6B4A;
+}
+
+/* Notebook textures */
+.ruled-lines {
+  background-color: #EEEAE0;
+  background-image: linear-gradient(rgba(60, 74, 110, 0.08) 1.5px, transparent 1.5px);
+  background-size: 100% 2.5rem;
+  line-height: 2.5rem;
+}
+
+.margin-rule {
+  position: relative;
+}
+
+.margin-rule::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3rem;
+  width: 2px;
+  background-color: rgba(179, 58, 58, 0.35); /* margin-red */
+  pointer-events: none;
+}
+
+/* Markdown typography inside parsed notes */
+.markdown-body h1 {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1F2C4C;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.25;
+}
+
+.markdown-body h2 {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1F2C4C;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.25;
+}
+
+.markdown-body p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.markdown-body ul, .markdown-body ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.markdown-body ul {
+  list-style-type: disc;
+}
+
+.markdown-body ol {
+  list-style-type: decimal;
+}
+
+.markdown-body li {
+  margin-bottom: 0.25rem;
+}
+
+/* Custom ink stamp animation styling */
+@keyframes stampIn {
+  0% {
+    opacity: 0;
+    transform: scale(2) rotate(-15deg);
+  }
+  80% {
+    opacity: 0.8;
+    transform: scale(0.95) rotate(-8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-12deg);
+  }
+}
+
+.ink-stamp {
+  animation: stampIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Print Specific Rules */
+@media print {
+  body, html {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  #root-app-layout {
+    display: none !important;
+  }
+  #print-notebook-layout {
+    display: block !important;
+  }
+}
+
+/* Respect the user's OS-level reduced-motion preference — disables the
+   AnimatedDemo scan/reveal animation, the ink-stamp entrance, and every
+   hover/transition effect sitewide, without needing to touch each component. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
