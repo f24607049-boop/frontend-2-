@@ -55,7 +55,8 @@ export async function fetchUsage(): Promise<UsageResponse> {
  * Request detailed explanation of structured text from local server (Groq API).
  */
 export async function requestExplain(text: string, query?: string): Promise<string> {
-  const response = await fetch("/api/explain", {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/api/explain`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -82,7 +83,8 @@ export async function requestExplain(text: string, query?: string): Promise<stri
  * Request bilingual glossary from local server (Groq API).
  */
 export async function requestGlossary(text: string): Promise<GlossaryItem[]> {
-  const response = await fetch("/api/glossary", {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/api/glossary`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -109,7 +111,8 @@ export async function requestGlossary(text: string): Promise<GlossaryItem[]> {
  * Request flashcards from local server (Groq API).
  */
 export async function requestFlashcards(text: string): Promise<FlashcardItem[]> {
-  const response = await fetch("/api/flashcards", {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/api/flashcards`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
