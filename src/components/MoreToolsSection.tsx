@@ -449,7 +449,7 @@ export default function MoreToolsSection({ scannedText, onLoadSampleText }: More
                               Answer
                             </span>
                             <p className="text-lg font-sans text-ink-navy leading-relaxed font-semibold">
-                              {flashcards[currentCardIndex]?.answer}
+                              {flashcards[currentCardIndex]?.answer || flashcards[currentCardIndex]?.back || "No Answer Available"}
                             </p>
                           </div>
                         ) : (
@@ -458,7 +458,7 @@ export default function MoreToolsSection({ scannedText, onLoadSampleText }: More
                               Question
                             </span>
                             <p className="text-xl font-display font-bold text-ink-navy leading-snug">
-                              {flashcards[currentCardIndex]?.question}
+                              {flashcards[currentCardIndex]?.question || flashcards[currentCardIndex]?.front || "No Question Available"}
                             </p>
                             <span className="text-[10px] font-mono text-ink-blue/50 absolute bottom-4 left-1/2 -translate-x-1/2">
                               Click card to flip / reveal answer
