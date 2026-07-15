@@ -46,7 +46,7 @@ export default function App() {
   // Conversion States
   const [isConverting, setIsConverting] = useState<boolean>(false);
   const [conversionResult, setConversionResult] = useState<ProcessResponse | null>(null);
-  const [convertError, setConvertError] = useState<string | null>(null);
+  const [convertError, setConvertError] = useState<React.ReactNode | null>(null); // Changed to support rich HTML/JSX error messages
 
   // Session state (multi-page scan booklet)
   const [sessionPages, setSessionPages] = useState<SavedSessionPage[]>([]);
@@ -55,7 +55,7 @@ export default function App() {
   // Print Guidelines Modal State
   const [isPrintGuideOpen, setIsPrintGuideOpen] = useState<boolean>(false);
 
-  // Download Dialog Modal State (matches user screenshot design exactly)
+  // Download Dialog Modal State
   const [isDownloadOpen, setIsDownloadOpen] = useState<boolean>(false);
   const [downloadText, setDownloadText] = useState<string>("");
   const [downloadSelectedFormat, setDownloadSelectedFormat] = useState<"docx" | "pdf" | "txt">("docx");
@@ -129,7 +129,12 @@ export default function App() {
   const handleSelectedFile = (selectedFile: File) => {
     // Client-side validations
     if (selectedFile.size > 15 * 1024 * 1024) {
-      setConvertError("File is too large. Please upload an image or PDF under 15MB.");
+      setConvertError(
+        <div className="space-y-1">
+          <p className="font-bold">File Size Exceeded (Max 15MB)</p>
+          <p>Aapki file ka size bohot zyada hai. Baraye meherbani humare standard parameters ke mutabiq 15MB se choti file upload karein.</p>
+        </div>
+      );
       return;
     }
 
@@ -137,12 +142,34 @@ export default function App() {
     const isImage = type.startsWith("image/");
     const isPDF = type === "application/pdf";
 
+    // Graceful formatting error handling
     if (!isImage && !isPDF) {
-      setConvertError("Unsupported file type. Please upload a valid Photo (PNG/JPG) or PDF.");
+      setConvertError(
+        <div className="space-y-2 text-left">
+          <p className="font-bold text-sm text-margin-red">Format Not Supported / Ghair-Mutabiq Format</p>
+          <p className="text-xs text-ink-blue/80 leading-relaxed">
+            Aapki upload karda file ka format humare system se match nahi karta. Humare standards ke mutabiq sirf darj-zail formats hi accept kiye jaate hain:
+          </p>
+          <div className="grid grid-cols-2 gap-2 mt-2 font-mono text-[11px] text-ink-navy">
+            <span className="bg-white/50 border border-ink-navy/10 px-2 py-1.5 rounded flex items-center gap-1.5">
+              📸 PNG Images
+            </span>
+            <span className="bg-white/50 border border-ink-navy/10 px-2 py-1.5 rounded flex items-center gap-1.5">
+              🖼️ JPG / JPEG
+            </span>
+            <span className="bg-white/50 border border-ink-navy/10 px-2 py-1.5 rounded flex items-center gap-1.5 col-span-2">
+              📄 PDF Documents (Max 15MB)
+            </span>
+          </div>
+          <p className="text-[11px] text-ink-blue/60 italic mt-1">
+            Meherbani farma kar in formats ke mutabiq file dobara upload karein takay OCR system ise sahi se scan kar sake.
+          </p>
+        </div>
+      );
       return;
     }
 
-    // Reset old conversion states
+    // Reset old conversion states on successful upload
     setConvertError(null);
     setConversionResult(null);
     cleanupFilePreview();
@@ -158,15 +185,13 @@ export default function App() {
     }
   };
 
-  // Trigger the download options modal (screenshot style)
+  // Trigger the download options modal
   const handleOpenDownload = (text: string, originalFilename?: string) => {
     setDownloadText(text);
-    // Extract base name without extension
     let baseName = "document";
     if (originalFilename) {
       baseName = originalFilename.replace(/\.[^/.]+$/, "");
     }
-    // Clean up base name
     baseName = baseName.replace(/[\s_]+/g, "_");
     setDownloadFilenameInput(baseName);
     setDownloadSelectedFormat("docx");
@@ -207,18 +232,21 @@ export default function App() {
     try {
       const resp = await processNotes(file);
       
-      // Ensure backend returned valid structure text
       if (!resp || (!resp.structured_text && !resp.raw_combined_text)) {
         throw new Error("Backend did not return any extracted text. Please check if your image has readable text.");
       }
       
       setConversionResult(resp);
       
-      // Update usage limit after successful conversion
       const updatedUsage = await fetchUsage().catch(() => null);
       if (updatedUsage) setUsage(updatedUsage);
     } catch (err: any) {
-      setConvertError(err.message || "Something went wrong while connecting to the scan server. Please try again.");
+      setConvertError(
+        <div className="space-y-1">
+          <p className="font-bold">Conversion Failed</p>
+          <p>{err.message || "Something went wrong while connecting to the scan server. Please try again."}</p>
+        </div>
+      );
     } finally {
       setIsConverting(false);
     }
@@ -238,12 +266,8 @@ export default function App() {
     };
 
     setSessionPages((prev) => [...prev, newPage]);
-
-    // Keep the preview URL valid in memory for printing
-    // Reset file state to allow scanning next page easily
     setFile(null);
     setConversionResult(null);
-    // Note: we do not clean up filePreview because we used it in the page session!
   };
 
   const handleClearSession = () => {
@@ -263,53 +287,8 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Load a rich multi-lingual mock sample so the user can test all features
-  const handleLoadSample = () => {
-    setFile(null);
-    cleanupFilePreview();
-    setConvertError(null);
-    
-    // Create an elegant fake result
-    const sampleResult: ProcessResponse = {
-      filename: "Bio_Class_Photosynthesis.jpg",
-      is_pdf: false,
-      pages: [
-        {
-          label: "Page 1",
-          success: true,
-          text: "Photosynthesis Lab Notes\nPlants absorb CO2 from air and water from soil. Chlorophyll absorbs light energy to release glucose and oxygen.",
-          error: null,
-          time_sec: 0.8
-        }
-      ],
-      raw_combined_text: "Photosynthesis Notes. Plants absorb CO2 from air and water. Chlorophyll uses sunlight to make chemical energy.",
-      structured_text: `# Biology Lecture: Photosynthesis Overview
-
-## Process Description
-Photosynthesis is how green plants make chemical energy from light.
-- **Inputs:** Carbon Dioxide (CO2), Water (H2O), and Sunlight
-- **Outputs:** Glucose (C6H12O6) and Oxygen (O2)
-
-## Vocabulary & Key Terms
-- **Chlorophyll:** The green pigment absorbing sunlight (energy harvester).
-- **Stomata:** Tiny leaf pores releasing oxygen and regulating gas exchange.
-- **Chemical reaction:**
-  - **Inputs:** Carbon Dioxide + Water
-  - **Catalyst:** Sunlight & Chlorophyll
-  - **Products:** Glucose + Oxygen
-
-*Note: This process is essential for all life on Earth.*`,
-      structuring_error: null
-    };
-
-    setConversionResult(sampleResult);
-    setFilePreview("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23EEEAE0'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%233C4A6E'>SAMPLE NOTE</text></svg>");
-  };
-
-  // Print PDF session booklet
   const handlePrintSession = () => {
     setIsPrintGuideOpen(false);
-    // Give browser a split second to paint modal close before launching print dialog
     setTimeout(() => {
       window.print();
     }, 300);
@@ -317,21 +296,14 @@ Photosynthesis is how green plants make chemical energy from light.
 
   const hasTable = conversionResult && detectMarkdownTable(conversionResult.structured_text);
 
-  // Helper to safely prepare raw text to block-compliant Markdown structure
   const preprocessMarkdown = (text: string) => {
     if (!text) return "";
     let processed = text;
-    
-    // 1. Literal '\n' strings ko line-breaks mein convert karein
     processed = processed.replace(/\\n/g, "\n");
-    
-    // 2. Tables parse karne ke liye line breaks dain
     processed = processed.replace(/(\n\|[^\n]+\|\r?\n\|:?-+:?\|)/g, "\n\n$1");
-    
     return processed;
   };
 
-  // Safe evaluation to find active text for study tools
   const getActiveTextForStudyTools = () => {
     if (conversionResult && conversionResult.structured_text) {
       return conversionResult.structured_text;
@@ -344,7 +316,6 @@ Photosynthesis is how green plants make chemical energy from light.
 
   return (
     <>
-      {/* 1. Main Root Container for Dashboard & Interaction */}
       <div id="root-app-layout" className="min-h-screen flex flex-col justify-between font-sans">
         
         {/* Navigation / Header */}
@@ -362,7 +333,6 @@ Photosynthesis is how green plants make chemical energy from light.
               <a href="#interactive-demo" className="text-xs font-mono font-bold text-ink-blue hover:text-ink-navy transition-colors">How it works</a>
               <a href="#more-study-tools" className="text-xs font-mono font-bold text-ink-blue hover:text-ink-navy transition-colors">Study Tools</a>
               
-              {/* Quiet Usage limit indicator */}
               {usage && (
                 <span className="text-[10px] font-mono bg-paper border border-ink-navy/10 text-ink-blue px-2.5 py-1 rounded-full font-semibold">
                   Today: {usage.remaining_pages_today} / {usage.daily_limit} Scans Left
@@ -372,11 +342,10 @@ Photosynthesis is how green plants make chemical energy from light.
           </div>
         </header>
 
-        {/* Hero Section & Core App above the fold */}
+        {/* Hero Section & Core App */}
         <main className="flex-grow py-12 px-4 bg-paper/30">
           <div className="max-w-4xl mx-auto">
             
-            {/* Visual Header / Introduction */}
             <div className="text-center mb-10">
               <span className="text-xs font-mono tracking-widest text-margin-red uppercase font-semibold">Free Handwriting-to-Text OCR</span>
               <h1 className="text-4xl md:text-5xl font-display font-extrabold text-ink-navy tracking-tight mt-2 leading-tight">
@@ -387,10 +356,10 @@ Photosynthesis is how green plants make chemical energy from light.
               </p>
             </div>
 
-            {/* Core Single-Screen Upload Action Area */}
+            {/* Core Upload Area */}
             <div className="bg-white border border-ink-navy/20 rounded-2xl shadow-sm p-6 md:p-8 mb-8 relative">
               
-              {/* Red Left Margin Line for classic school booklet motif */}
+              {/* Red Left Margin Line */}
               <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-margin-red/20 pointer-events-none" />
 
               {/* Upload Drop Zone Area */}
@@ -411,7 +380,7 @@ Photosynthesis is how green plants make chemical energy from light.
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileInput}
-                    accept="image/*,application/pdf"
+                    accept="image/png, image/jpeg, image/jpg, application/pdf"
                     className="hidden"
                   />
                   
@@ -435,14 +404,13 @@ Photosynthesis is how green plants make chemical energy from light.
                 </div>
               )}
 
-              {/* Explicit Two-Step Preview & Convert Screen */}
+              {/* Step 1: Preview Screen */}
               {file && !conversionResult && !isConverting && (
                 <div className="border border-ink-navy/10 rounded-xl p-6 bg-paper/10 flex flex-col items-center">
                   <h3 className="text-xs font-mono uppercase tracking-wider text-ink-blue/50 mb-4">
                     Step 1: Preview Note Scan
                   </h3>
 
-                  {/* Thumbnail / PDF Box */}
                   <div className="max-w-xs w-full bg-white rounded-lg border border-ink-navy/15 p-4 shadow-xs flex flex-col items-center mb-6">
                     {isPdf ? (
                       <div className="py-6 flex flex-col items-center">
@@ -467,7 +435,6 @@ Photosynthesis is how green plants make chemical energy from light.
                     </span>
                   </div>
 
-                  {/* Conversion Trigger Button */}
                   <div className="flex items-center gap-4 w-full max-w-sm">
                     <button
                       onClick={handleCancelFile}
@@ -487,47 +454,39 @@ Photosynthesis is how green plants make chemical energy from light.
                 </div>
               )}
 
-              {/* Satisfying Scanning Laser Animations */}
+              {/* Laser Animation Screen */}
               {isConverting && (
                 <div className="border border-ink-navy/10 rounded-xl py-12 px-6 bg-paper/20 flex flex-col items-center justify-center relative overflow-hidden min-h-[250px]">
-                  
-                  {/* Green scanning line sweeps down */}
                   <div className="absolute left-0 right-0 h-1 bg-stamp-green shadow-[0_0_15px_#3F6B4A] animate-pulse" style={{ animationDuration: "1.5s", top: "50%" }} />
-
                   <Loader2 className="w-10 h-10 text-marigold animate-spin mb-4" />
-                  
                   <h3 className="text-lg font-display font-bold text-ink-navy animate-pulse">
                     Scanning note layout...
                   </h3>
-                  
                   <p className="text-xs text-ink-blue/70 mt-2 text-center max-w-xs font-mono">
                     Analyzing bilingual syntax, handwritten scripts and converting to clean structured Markdown...
                   </p>
                 </div>
               )}
 
-              {/* Error messages */}
+              {/* Dynamic Error box targeting invalid formats and sizes gracefully */}
               {convertError && (
-                <div className="bg-margin-red/10 border border-margin-red/20 text-margin-red text-xs p-4 rounded-xl mt-4 flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <div className="space-y-1">
-                    <p className="font-bold">Conversion Failed</p>
-                    <p>{convertError}</p>
+                <div className="bg-margin-red/10 border border-margin-red/20 text-margin-red text-xs p-5 rounded-xl mt-4 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 text-margin-red" />
+                  <div className="flex-grow">
+                    {convertError}
                     <button
                       onClick={handleCancelFile}
-                      className="text-[10px] font-mono font-bold underline text-margin-red hover:text-red-800 block mt-2"
+                      className="text-[10px] font-mono font-bold underline text-margin-red hover:text-red-800 block mt-3 uppercase tracking-wider"
                     >
-                      Try uploading another photo
+                      Try uploading correct format / File dobara upload karein
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Results card — styled as school booklet with Green Verified Stamp */}
+              {/* Conversion Results Area */}
               {conversionResult && !isConverting && (
                 <div className="border border-ink-navy/15 rounded-xl bg-white overflow-hidden shadow-xs relative">
-                  
-                  {/* Results Header strip */}
                   <div className="bg-paper px-6 py-3 border-b border-ink-navy/15 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-stamp-green animate-ping" />
@@ -555,13 +514,9 @@ Photosynthesis is how green plants make chemical energy from light.
                     </div>
                   </div>
 
-                  {/* Clean ruled sheet paper displaying Markdown typography output */}
                   <div className="p-6 md:p-8 pl-12 md:pl-16 relative min-h-[300px]">
-                    
-                    {/* Persistent vertical margin line */}
                     <div className="absolute left-8 md:left-10 top-0 bottom-0 w-0.5 bg-margin-red/20 pointer-events-none" />
 
-                    {/* Highly-designed Rotated Checked Green Ink Stamp */}
                     <div className="absolute right-6 bottom-6 select-none pointer-events-none ink-stamp">
                       <div className="border-4 border-emerald-700 text-emerald-700 font-mono font-bold px-3 py-1.5 rounded text-center uppercase tracking-widest text-[10px]">
                         <div>SCANMYNOTES</div>
@@ -570,11 +525,10 @@ Photosynthesis is how green plants make chemical energy from light.
                       </div>
                     </div>
 
-                    {/* Fixed ReactMarkdown rendering setup */}
                     <div className="text-ink-navy font-sans leading-relaxed text-sm space-y-4 prose max-w-none text-left">
                       {conversionResult.structured_text || conversionResult.raw_combined_text ? (
                         <ReactMarkdown
-                          remarkPlugins={[remarkGfm]} // remarkGfm se tables active ho jayenge
+                          remarkPlugins={[remarkGfm]}
                           components={{
                             h1: (props) => <h1 className="text-2xl font-extrabold text-ink-navy mb-4 mt-2 block" {...props} />,
                             h2: (props) => <h2 className="text-xl font-bold text-ink-navy border-b border-ink-navy/10 pb-1 mb-3 mt-4 block" {...props} />,
@@ -605,7 +559,6 @@ Photosynthesis is how green plants make chemical energy from light.
                     </div>
                   </div>
 
-                  {/* Actions / Export / Session block */}
                   <div className="bg-paper/30 border-t border-ink-navy/10 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-mono text-ink-blue/60 mr-2">Export:</span>
@@ -618,7 +571,6 @@ Photosynthesis is how green plants make chemical energy from light.
                         Download Document...
                       </button>
 
-                      {/* EXCEL Export option: Only show when tabular data is active */}
                       {hasTable && (
                         <button
                           onClick={() => exportToExcel(conversionResult.structured_text || conversionResult.raw_combined_text || "", `ScanMyNotes_${conversionResult.filename || "Note"}.xlsx`)}
@@ -640,23 +592,9 @@ Photosynthesis is how green plants make chemical energy from light.
                   </div>
                 </div>
               )}
-
-              {/* Load Sample Demo Trigger */}
-              {!file && !conversionResult && (
-                <div className="mt-4 flex items-center justify-between text-xs text-ink-blue/60 border-t border-ink-navy/10 pt-4 px-2">
-                  <span>Don't have a note handy?</span>
-                  <button
-                    onClick={handleLoadSample}
-                    className="text-xs font-mono font-bold text-marigold hover:text-marigold-hover hover:underline inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Load Sample Biology Lecture Note
-                  </button>
-                </div>
-              )}
             </div>
 
-            {/* 2. Page-by-Page Active Session Strip Container */}
+            {/* Binder Multi-Page Session Container */}
             {sessionPages.length > 0 && (
               <div className="bg-white border border-ink-navy/15 rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-3">
@@ -693,7 +631,7 @@ Photosynthesis is how green plants make chemical energy from light.
               </div>
             )}
 
-            {/* Before / After Animated Typing Demo Container */}
+            {/* Typing Animation Showcase */}
             <div className="bg-white border border-ink-navy/10 rounded-2xl py-6 mb-12 shadow-2xs">
               <div className="text-center px-4 max-w-lg mx-auto mb-2">
                 <h3 className="text-lg font-display font-extrabold text-ink-navy">See Conversion In Action</h3>
@@ -702,13 +640,13 @@ Photosynthesis is how green plants make chemical energy from light.
               <AnimatedDemo />
             </div>
 
-            {/* Advanced features study suite Section */}
+            {/* Advanced Tools Suite */}
             <MoreToolsSection 
               scannedText={getActiveTextForStudyTools()} 
-              onLoadSampleText={handleLoadSample}
+              onLoadSampleText={() => {}} // Disabling mock trigger silently
             />
 
-            {/* 3. FAQ Informational Area (SEO FAQPage support) */}
+            {/* FAQ Area */}
             <section id="faq-section" className="border-t border-ink-navy/10 pt-12 mt-16 max-w-3xl mx-auto">
               <h2 className="text-2xl font-display font-extrabold text-ink-navy text-center tracking-tight mb-8">
                 Frequently Asked Questions
@@ -741,7 +679,7 @@ Photosynthesis is how green plants make chemical energy from light.
           </div>
         </main>
 
-        {/* Persistent Footer */}
+        {/* Footer */}
         <footer className="border-t border-ink-navy/15 bg-white py-8 px-6 text-center text-xs text-ink-blue/60 font-mono">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <p>© 2026 ScanMyNotes Team. Built for students and educators.</p>
@@ -753,7 +691,7 @@ Photosynthesis is how green plants make chemical energy from light.
           </div>
         </footer>
 
-        {/* 4. PDF Booklet print preparation guidelines modal */}
+        {/* PDF Guide Modal */}
         {isPrintGuideOpen && (
           <div className="fixed inset-0 bg-ink-navy/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
             <div className="bg-white border border-ink-navy/20 rounded-2xl p-6 max-w-md w-full shadow-lg relative animate-fadeIn">
@@ -795,7 +733,7 @@ Photosynthesis is how green plants make chemical energy from light.
           </div>
         )}
 
-        {/* User Requested Format Download Dialog Modal */}
+        {/* Download Dialog Modal */}
         {isDownloadOpen && (
           <div className="fixed inset-0 bg-ink-navy/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
             <div className="bg-white border border-ink-navy/15 rounded-2xl p-8 max-w-lg w-full shadow-lg relative animate-fadeIn">
@@ -804,9 +742,8 @@ Photosynthesis is how green plants make chemical energy from light.
                 Which format do you want to download?
               </h3>
               
-              {/* Option Cards */}
               <div className="space-y-3 mb-6">
-                {/* Word Document Option */}
+                {/* Word Document */}
                 <div 
                   onClick={() => setDownloadSelectedFormat("docx")}
                   className={`group cursor-pointer border rounded-xl p-4 flex items-center justify-between transition-all duration-200 ${
@@ -831,13 +768,12 @@ Photosynthesis is how green plants make chemical energy from light.
                     </div>
                   </div>
                   
-                  {/* Right hand word document icon */}
                   <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
                     <FileText className="w-4 h-4 text-indigo-500" />
                   </div>
                 </div>
 
-                {/* Searchable PDF Option */}
+                {/* PDF */}
                 <div 
                   onClick={() => setDownloadSelectedFormat("pdf")}
                   className={`group cursor-pointer border rounded-xl p-4 flex items-center justify-between transition-all duration-200 ${
@@ -862,13 +798,12 @@ Photosynthesis is how green plants make chemical energy from light.
                     </div>
                   </div>
                   
-                  {/* Right hand PDF icon */}
                   <div className="w-9 h-9 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-500">
                     <Download className="w-4 h-4 text-red-500" />
                   </div>
                 </div>
 
-                {/* Plain Text Option */}
+                {/* Plain Text */}
                 <div 
                   onClick={() => setDownloadSelectedFormat("txt")}
                   className={`group cursor-pointer border rounded-xl p-4 flex items-center justify-between transition-all duration-200 ${
@@ -893,14 +828,12 @@ Photosynthesis is how green plants make chemical energy from light.
                     </div>
                   </div>
                   
-                  {/* Right hand text file icon */}
                   <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
                     <FileText className="w-4 h-4 text-emerald-500" />
                   </div>
                 </div>
               </div>
               
-              {/* File name Input Field */}
               <div className="mb-6 text-left">
                 <label className="text-xs font-mono font-bold text-ink-blue/70 uppercase tracking-wide block mb-1.5">
                   File name
@@ -914,7 +847,6 @@ Photosynthesis is how green plants make chemical energy from light.
                 />
               </div>
               
-              {/* Action Buttons */}
               <div className="flex items-center justify-between gap-4">
                 <button
                   onClick={() => setIsDownloadOpen(false)}
@@ -938,7 +870,7 @@ Photosynthesis is how green plants make chemical energy from light.
 
       </div>
 
-      {/* 2. Hidden Booklet component targeted ONLY by @media print */}
+      {/* Hidden Booklet Component */}
       <PrintNotebook sessionPages={sessionPages} />
     </>
   );
