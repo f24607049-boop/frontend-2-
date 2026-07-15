@@ -539,18 +539,18 @@ Photosynthesis is how green plants make chemical energy from light.
                     </div>
 
                     {/* Fixed ReactMarkdown rendering setup */}
-                    <div className="text-ink-navy font-sans leading-relaxed text-sm space-y-4">
+                    <div className="text-ink-navy font-sans leading-relaxed text-sm space-y-4 prose max-w-none">
                       <ReactMarkdown
                         components={{
-                          h1: (props) => <h1 className="text-2xl font-extrabold text-ink-navy mb-4 mt-2" {...props} />,
-                          h2: (props) => <h2 className="text-xl font-bold text-ink-navy border-b border-ink-navy/10 pb-1 mb-3 mt-4" {...props} />,
-                          h3: (props) => <h3 className="text-lg font-bold text-ink-navy mb-2 mt-3" {...props} />,
-                          p: (props) => <p className="text-sm text-ink-navy/90 leading-relaxed mb-3" {...props} />,
+                          h1: (props) => <h1 className="text-2xl font-extrabold text-ink-navy mb-4 mt-2 block" {...props} />,
+                          h2: (props) => <h2 className="text-xl font-bold text-ink-navy border-b border-ink-navy/10 pb-1 mb-3 mt-4 block" {...props} />,
+                          h3: (props) => <h3 className="text-lg font-bold text-ink-navy mb-2 mt-3 block" {...props} />,
+                          p: (props) => <p className="text-sm text-ink-navy/90 leading-relaxed mb-3 block" {...props} />,
                           strong: (props) => <strong className="font-bold text-ink-navy" {...props} />,
                           em: (props) => <em className="italic" {...props} />,
-                          ul: (props) => <ul className="list-disc list-inside pl-4 space-y-1 mb-4" {...props} />,
-                          ol: (props) => <ol className="list-decimal list-inside pl-4 space-y-1 mb-4" {...props} />,
-                          li: (props) => <li className="text-sm text-ink-navy/95" {...props} />,
+                          ul: (props) => <ul className="list-disc list-inside pl-4 space-y-1 mb-4 block" {...props} />,
+                          ol: (props) => <ol className="list-decimal list-inside pl-4 space-y-1 mb-4 block" {...props} />,
+                          li: (props) => <li className="text-sm text-ink-navy/95 list-item" {...props} />,
                           table: (props) => (
                             <div className="overflow-x-auto my-6 border border-ink-navy/10 rounded-lg">
                               <table className="min-w-full divide-y divide-ink-navy/10" {...props} />
@@ -563,7 +563,8 @@ Photosynthesis is how green plants make chemical energy from light.
                           td: (props) => <td className="px-4 py-2 text-sm text-ink-navy/85 border-r border-ink-navy/10 last:border-0" {...props} />,
                         }}
                       >
-                        {conversionResult.structured_text}
+                        {/* Auto-replace literal '\n' with actual line-break whitespaces */}
+                        {conversionResult.structured_text ? conversionResult.structured_text.replace(/\\n/g, '\n') : ""}
                       </ReactMarkdown>
                     </div>
                   </div>
