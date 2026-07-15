@@ -538,29 +538,29 @@ Photosynthesis is how green plants make chemical energy from light.
                       </div>
                     </div>
 
-                    {/* 🆕 Customized ReactMarkdown with strict styling components to render standard tags */}
+                    {/* Fixed ReactMarkdown rendering setup */}
                     <div className="text-ink-navy font-sans leading-relaxed text-sm space-y-4">
                       <ReactMarkdown
                         components={{
-                          h1: ({node, ...props}) => <h1 className="text-2xl font-extrabold text-ink-navy mb-4 mt-2" {...props} />,
-                          h2: ({node, ...props}) => <h2 className="text-xl font-bold text-ink-navy border-b border-ink-navy/10 pb-1 mb-3 mt-4" {...props} />,
-                          h3: ({node, ...props}) => <h3 className="text-lg font-bold text-ink-navy mb-2 mt-3" {...props} />,
-                          p: ({node, ...props}) => <p className="text-sm text-ink-navy/90 leading-relaxed mb-3" {...props} />,
-                          strong: ({node, ...props}) => <strong className="font-bold text-ink-navy" {...props} />,
-                          em: ({node, ...props}) => <em className="italic" {...props} />,
-                          ul: ({node, ...props}) => <ul className="list-disc list-inside pl-4 space-y-1 mb-4" {...props} />,
-                          ol: ({node, ...props}) => <ol className="list-decimal list-inside pl-4 space-y-1 mb-4" {...props} />,
-                          li: ({node, ...props}) => <li className="text-sm text-ink-navy/95" {...props} />,
-                          table: ({node, ...props}) => (
+                          h1: (props) => <h1 className="text-2xl font-extrabold text-ink-navy mb-4 mt-2" {...props} />,
+                          h2: (props) => <h2 className="text-xl font-bold text-ink-navy border-b border-ink-navy/10 pb-1 mb-3 mt-4" {...props} />,
+                          h3: (props) => <h3 className="text-lg font-bold text-ink-navy mb-2 mt-3" {...props} />,
+                          p: (props) => <p className="text-sm text-ink-navy/90 leading-relaxed mb-3" {...props} />,
+                          strong: (props) => <strong className="font-bold text-ink-navy" {...props} />,
+                          em: (props) => <em className="italic" {...props} />,
+                          ul: (props) => <ul className="list-disc list-inside pl-4 space-y-1 mb-4" {...props} />,
+                          ol: (props) => <ol className="list-decimal list-inside pl-4 space-y-1 mb-4" {...props} />,
+                          li: (props) => <li className="text-sm text-ink-navy/95" {...props} />,
+                          table: (props) => (
                             <div className="overflow-x-auto my-6 border border-ink-navy/10 rounded-lg">
                               <table className="min-w-full divide-y divide-ink-navy/10" {...props} />
                             </div>
                           ),
-                          thead: ({node, ...props}) => <thead className="bg-paper" {...props} />,
-                          tbody: ({node, ...props}) => <tbody className="divide-y divide-ink-navy/10 bg-white" {...props} />,
-                          tr: ({node, ...props}) => <tr className="hover:bg-paper/30 transition-colors" {...props} />,
-                          th: ({node, ...props}) => <th className="px-4 py-2.5 text-left text-xs font-mono font-bold text-ink-navy uppercase tracking-wider border-r border-ink-navy/10 last:border-0" {...props} />,
-                          td: ({node, ...props}) => <td className="px-4 py-2 text-sm text-ink-navy/85 border-r border-ink-navy/10 last:border-0" {...props} />,
+                          thead: (props) => <thead className="bg-paper" {...props} />,
+                          tbody: (props) => <tbody className="divide-y divide-ink-navy/10 bg-white" {...props} />,
+                          tr: (props) => <tr className="hover:bg-paper/30 transition-colors" {...props} />,
+                          th: (props) => <th className="px-4 py-2.5 text-left text-xs font-mono font-bold text-ink-navy uppercase tracking-wider border-r border-ink-navy/10 last:border-0" {...props} />,
+                          td: (props) => <td className="px-4 py-2 text-sm text-ink-navy/85 border-r border-ink-navy/10 last:border-0" {...props} />,
                         }}
                       >
                         {conversionResult.structured_text}
