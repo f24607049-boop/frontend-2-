@@ -538,21 +538,8 @@ Photosynthesis is how green plants make chemical energy from light.
                     </div>
 
                     {/* Structured transcription text */}
-                    <div className="prose prose-sm max-w-none text-ink-navy markdown-body">
-                      {conversionResult.structured_text.split("\n").map((line, lIdx) => {
-                        const trimmed = line.trim();
-                        if (trimmed.startsWith("# ")) {
-                          return <h1 key={lIdx}>{trimmed.substring(2)}</h1>;
-                        } else if (trimmed.startsWith("## ")) {
-                          return <h2 key={lIdx}>{trimmed.substring(3)}</h2>;
-                        } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-                          return <li key={lIdx} className="ml-4">{trimmed.substring(2)}</li>;
-                        } else if (trimmed === "") {
-                          return <div key={lIdx} className="h-2"></div>;
-                        } else {
-                          return <p key={lIdx}>{line}</p>;
-                        }
-                      })}
+                    <div className="prose prose-sm max-w-none text-ink-navy markdown-body whitespace-pre-wrap font-sans leading-relaxed text-sm">
+                      {conversionResult.structured_text}
                     </div>
                   </div>
 
