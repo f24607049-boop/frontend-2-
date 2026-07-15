@@ -28,6 +28,135 @@ interface MoreToolsProps {
 
 type ToolType = "none" | "explain" | "glossary" | "flashcards";
 
+// Helper function to render Markdown and clean LaTeX directly without dynamic imports
+function parseMarkdownAndMath(text: string) {
+  if (!text) return null;
+
+  const lines = text.split("\n");
+  const parsedElements: React.ReactNode[] = [];
+  let currentTable: { headers: string[]; rows: string[][] } | null = null;
+
+  const cleanText = (rawStr: string) => {
+    // 1. Remove LaTeX dollar signs and convert subscripts ($CO_2$ -> CO₂)
+    let clean = rawStr.replace(/\$(.*?)\$/g, "$1");
+    clean = clean.replace(/_(\d+)/g, (_, digit) => {
+      const subscripts = ["₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"];
+      return digit.split("").map((d: string) => subscripts[parseInt(d)] || d).join("");
+    });
+
+    // 2. Parse inline bold tags (**text**)
+    const boldRegex = /\*\*(.*?)\*\*/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = boldRegex.exec(clean)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(clean.substring(lastIndex, match.index));
+      }
+      parts.push(<strong key={match.index} className="font-bold text-ink-navy">{match[1]}</strong>);
+      lastIndex = boldRegex.lastIndex;
+    }
+    if (lastIndex < clean.length) {
+      parts.push(clean.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : clean;
+  };
+
+  const renderCurrentTable = (key: number) => {
+    if (!currentTable) return null;
+    const tableData = currentTable;
+    currentTable = null; // reset
+    return (
+      <div key={`table-${key}`} className="overflow-x-auto my-4 border border-ink-navy/15 rounded-xl">
+        <table className="w-full text-left border-collapse font-sans text-xs">
+          <thead>
+            <tr className="bg-paper border-b border-ink-navy/15 text-ink-navy font-bold">
+              {tableData.headers.map((header, i) => (
+                <th key={i} className="p-3">{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-ink-navy/10 bg-white text-ink-navy/80">
+            {tableData.rows.map((row, i) => (
+              <tr key={i} className="hover:bg-paper/5 transition-colors">
+                {row.map((cell, j) => (
+                  <td key={j} className="p-3">{cleanText(cell)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Table parsing
+    if (line.startsWith("|")) {
+      const cells = line.split("|").map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+      
+      // Check if it's separator line (e.g. |---|:---|)
+      if (cells.every(cell => cell.match(/^:?-+:?$/))) {
+        continue; 
+      }
+
+      if (!currentTable) {
+        currentTable = { headers: cells, rows: [] };
+      } else {
+        currentTable.rows.push(cells);
+      }
+      continue;
+    }
+
+    // If a non-table line is found but we were building a table, render it first
+    if (currentTable && !line.startsWith("|")) {
+      parsedElements.push(renderCurrentTable(i));
+    }
+
+    // Bullet Lists
+    if (line.startsWith("* ") || line.startsWith("- ")) {
+      parsedElements.push(
+        <li key={i} className="list-disc list-inside ml-4 text-xs text-ink-navy/80 leading-relaxed">
+          {cleanText(line.substring(2))}
+        </li>
+      );
+      continue;
+    }
+
+    // Headings (### Title)
+    if (line.startsWith("###")) {
+      parsedElements.push(
+        <h5 key={i} className="text-sm font-display font-bold text-ink-navy mt-4 mb-2">
+          {cleanText(line.replace(/^###\s*/, ""))}
+        </h5>
+      );
+      continue;
+    }
+
+    // Paragraph
+    if (line !== "") {
+      parsedElements.push(
+        <p key={i} className="text-xs text-ink-navy/80 leading-relaxed py-0.5">
+          {cleanText(line)}
+        </p>
+      );
+    } else {
+      parsedElements.push(<div key={i} className="h-2" />);
+    }
+  }
+
+  // Final table output if it is at the end of text
+  if (currentTable) {
+    parsedElements.push(renderCurrentTable(lines.length));
+  }
+
+  return parsedElements;
+}
+
 export default function MoreToolsSection({ scannedText, onLoadSampleText }: MoreToolsProps) {
   const [activeTool, setActiveTool] = useState<ToolType>("none");
   const [loading, setLoading] = useState<boolean>(false);
@@ -271,8 +400,8 @@ export default function MoreToolsSection({ scannedText, onLoadSampleText }: More
                           <h4 className="font-display font-bold text-ink-navy mb-4 text-base border-b border-ink-navy/10 pb-2">
                             AI Tutor Explanation
                           </h4>
-                          <div className="whitespace-pre-line space-y-2">
-                            {explanation}
+                          <div className="space-y-2">
+                            {parseMarkdownAndMath(explanation)}
                           </div>
                         </div>
 
@@ -448,18 +577,18 @@ export default function MoreToolsSection({ scannedText, onLoadSampleText }: More
                             <span className="text-[10px] font-mono tracking-wider text-stamp-green bg-stamp-green/10 px-2 py-0.5 rounded font-bold uppercase mb-3 inline-block">
                               Answer
                             </span>
-                            <p className="text-lg font-sans text-ink-navy leading-relaxed font-semibold">
-                              {flashcards[currentCardIndex]?.answer || flashcards[currentCardIndex]?.back || "No Answer Available"}
-                            </p>
+                            <div className="text-sm font-sans text-ink-navy leading-relaxed font-semibold">
+                              {parseMarkdownAndMath(flashcards[currentCardIndex]?.answer || flashcards[currentCardIndex]?.back || "No Answer Available")}
+                            </div>
                           </div>
                         ) : (
                           <div className="animate-fadeIn">
                             <span className="text-[10px] font-mono tracking-wider text-margin-red bg-margin-red/10 px-2 py-0.5 rounded font-bold uppercase mb-3 inline-block">
                               Question
                             </span>
-                            <p className="text-xl font-display font-bold text-ink-navy leading-snug">
-                              {flashcards[currentCardIndex]?.question || flashcards[currentCardIndex]?.front || "No Question Available"}
-                            </p>
+                            <div className="text-base font-display font-bold text-ink-navy leading-snug">
+                              {parseMarkdownAndMath(flashcards[currentCardIndex]?.question || flashcards[currentCardIndex]?.front || "No Question Available")}
+                            </div>
                             <span className="text-[10px] font-mono text-ink-blue/50 absolute bottom-4 left-1/2 -translate-x-1/2">
                               Click card to flip / reveal answer
                             </span>
