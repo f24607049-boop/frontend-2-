@@ -22,6 +22,8 @@ import {
   Maximize2,
   Printer
 } from "lucide-react";
+// 🆕 Markdown Rendering ke liye package import kiya hai
+import ReactMarkdown from "react-markdown";
 import { processNotes, fetchUsage } from "./lib/api";
 import { exportToDocx, exportToExcel, exportToTxt, exportToPdf, detectMarkdownTable } from "./lib/exports";
 import { SavedSessionPage, ProcessResponse } from "./types";
@@ -278,17 +280,16 @@ export default function App() {
 
 ## Process Description
 Photosynthesis is how green plants make chemical energy from light.
-- **Inputs:** Carbon Dioxide ($CO_2$), Water ($H_2O$), and Sunlight
-- **Outputs:** Glucose ($C_6H_12O_6$) and Oxygen ($O_2$)
+- **Inputs:** Carbon Dioxide (CO2), Water (H2O), and Sunlight
+- **Outputs:** Glucose (C6H12O6) and Oxygen (O2)
 
 ## Vocabulary & Key Terms
 - **Chlorophyll:** The green pigment absorbing sunlight (energy harvester).
 - **Stomata:** Tiny leaf pores releasing oxygen and regulating gas exchange.
 - **Chemical reaction:**
-  | Input Reactants | Energy Driver | Final Products |
-  | :--- | :--- | :--- |
-  | Carbon Dioxide + Water | Sunlight & Chlorophyll | Glucose + Oxygen |
-  | 6 CO₂ + 6 H₂O | Catalyst | C₆H₁₂O₆ + 6 O₂ |
+  - **Inputs:** Carbon Dioxide + Water
+  - **Catalyst:** Sunlight & Chlorophyll
+  - **Products:** Glucose + Oxygen
 
 *Note: This process is essential for all life on Earth.*`,
       structuring_error: null
@@ -537,9 +538,9 @@ Photosynthesis is how green plants make chemical energy from light.
                       </div>
                     </div>
 
-                    {/* Structured transcription text */}
-                    <div className="prose prose-sm max-w-none text-ink-navy markdown-body whitespace-pre-wrap font-sans leading-relaxed text-sm">
-                      {conversionResult.structured_text}
+                    {/* 🆕 ReactMarkdown ka use kar ke notes render kiye hain */}
+                    <div className="prose prose-sm max-w-none text-ink-navy markdown-body font-sans leading-relaxed text-sm">
+                      <ReactMarkdown>{conversionResult.structured_text}</ReactMarkdown>
                     </div>
                   </div>
 
