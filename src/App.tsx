@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 // ReactMarkdown standard rendering
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm"; // Table support ke liye plugin import kiya
 import { processNotes, fetchUsage } from "./lib/api";
 import { exportToDocx, exportToExcel, exportToTxt, exportToPdf, detectMarkdownTable } from "./lib/exports";
 import { SavedSessionPage, ProcessResponse } from "./types";
@@ -310,6 +311,20 @@ Photosynthesis is how green plants make chemical energy from light.
 
   const hasTable = conversionResult && detectMarkdownTable(conversionResult.structured_text);
 
+  // Helper to safely prepare raw text to block-compliant Markdown structure
+  const preprocessMarkdown = (text: string) => {
+    if (!text) return "";
+    let processed = text;
+    
+    // 1. Literal '\n' strings ko line-breaks mein convert karein
+    processed = processed.replace(/\\n/g, "\n");
+    
+    // 2. Tables parse karne ke liye line breaks dain
+    processed = processed.replace(/(\n\|[^\n]+\|\r?\n\|:?-+:?\|)/g, "\n\n$1");
+    
+    return processed;
+  };
+
   return (
     <>
       {/* 1. Main Root Container for Dashboard & Interaction */}
@@ -539,8 +554,9 @@ Photosynthesis is how green plants make chemical energy from light.
                     </div>
 
                     {/* Fixed ReactMarkdown rendering setup */}
-                    <div className="text-ink-navy font-sans leading-relaxed text-sm space-y-4 prose max-w-none">
+                    <div className="text-ink-navy font-sans leading-relaxed text-sm space-y-4 prose max-w-none text-left">
                       <ReactMarkdown
+                        remarkPlugins={[remarkGfm]} // remarkGfm se tables active ho jayenge
                         components={{
                           h1: (props) => <h1 className="text-2xl font-extrabold text-ink-navy mb-4 mt-2 block" {...props} />,
                           h2: (props) => <h2 className="text-xl font-bold text-ink-navy border-b border-ink-navy/10 pb-1 mb-3 mt-4 block" {...props} />,
@@ -563,8 +579,7 @@ Photosynthesis is how green plants make chemical energy from light.
                           td: (props) => <td className="px-4 py-2 text-sm text-ink-navy/85 border-r border-ink-navy/10 last:border-0" {...props} />,
                         }}
                       >
-                        {/* Auto-replace literal '\n' with actual line-break whitespaces */}
-                        {conversionResult.structured_text ? conversionResult.structured_text.replace(/\\n/g, '\n') : ""}
+                        {preprocessMarkdown(conversionResult.structured_text || "")}
                       </ReactMarkdown>
                     </div>
                   </div>
