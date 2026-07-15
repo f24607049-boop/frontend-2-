@@ -206,6 +206,12 @@ export default function App() {
 
     try {
       const resp = await processNotes(file);
+      
+      // Ensure backend returned valid structure text
+      if (!resp || (!resp.structured_text && !resp.raw_combined_text)) {
+        throw new Error("Backend did not return any extracted text. Please check if your image has readable text.");
+      }
+      
       setConversionResult(resp);
       
       // Update usage limit after successful conversion
@@ -323,6 +329,17 @@ Photosynthesis is how green plants make chemical energy from light.
     processed = processed.replace(/(\n\|[^\n]+\|\r?\n\|:?-+:?\|)/g, "\n\n$1");
     
     return processed;
+  };
+
+  // Safe evaluation to find active text for study tools
+  const getActiveTextForStudyTools = () => {
+    if (conversionResult && conversionResult.structured_text) {
+      return conversionResult.structured_text;
+    }
+    if (sessionPages.length > 0 && sessionPages[sessionPages.length - 1].structuredText) {
+      return sessionPages[sessionPages.length - 1].structuredText;
+    }
+    return "";
   };
 
   return (
@@ -521,7 +538,7 @@ Photosynthesis is how green plants make chemical energy from light.
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleCopyText(conversionResult.structured_text)}
+                        onClick={() => handleCopyText(conversionResult.structured_text || "")}
                         className="p-1.5 rounded hover:bg-ink-navy/5 text-ink-blue hover:text-ink-navy transition-colors focus:outline-none"
                         title="Copy raw text to clipboard"
                         aria-label="Copy raw text"
@@ -555,32 +572,36 @@ Photosynthesis is how green plants make chemical energy from light.
 
                     {/* Fixed ReactMarkdown rendering setup */}
                     <div className="text-ink-navy font-sans leading-relaxed text-sm space-y-4 prose max-w-none text-left">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]} // remarkGfm se tables active ho jayenge
-                        components={{
-                          h1: (props) => <h1 className="text-2xl font-extrabold text-ink-navy mb-4 mt-2 block" {...props} />,
-                          h2: (props) => <h2 className="text-xl font-bold text-ink-navy border-b border-ink-navy/10 pb-1 mb-3 mt-4 block" {...props} />,
-                          h3: (props) => <h3 className="text-lg font-bold text-ink-navy mb-2 mt-3 block" {...props} />,
-                          p: (props) => <p className="text-sm text-ink-navy/90 leading-relaxed mb-3 block" {...props} />,
-                          strong: (props) => <strong className="font-bold text-ink-navy" {...props} />,
-                          em: (props) => <em className="italic" {...props} />,
-                          ul: (props) => <ul className="list-disc list-inside pl-4 space-y-1 mb-4 block" {...props} />,
-                          ol: (props) => <ol className="list-decimal list-inside pl-4 space-y-1 mb-4 block" {...props} />,
-                          li: (props) => <li className="text-sm text-ink-navy/95 list-item" {...props} />,
-                          table: (props) => (
-                            <div className="overflow-x-auto my-6 border border-ink-navy/10 rounded-lg">
-                              <table className="min-w-full divide-y divide-ink-navy/10" {...props} />
-                            </div>
-                          ),
-                          thead: (props) => <thead className="bg-paper" {...props} />,
-                          tbody: (props) => <tbody className="divide-y divide-ink-navy/10 bg-white" {...props} />,
-                          tr: (props) => <tr className="hover:bg-paper/30 transition-colors" {...props} />,
-                          th: (props) => <th className="px-4 py-2.5 text-left text-xs font-mono font-bold text-ink-navy uppercase tracking-wider border-r border-ink-navy/10 last:border-0" {...props} />,
-                          td: (props) => <td className="px-4 py-2 text-sm text-ink-navy/85 border-r border-ink-navy/10 last:border-0" {...props} />,
-                        }}
-                      >
-                        {preprocessMarkdown(conversionResult.structured_text || "")}
-                      </ReactMarkdown>
+                      {conversionResult.structured_text || conversionResult.raw_combined_text ? (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]} // remarkGfm se tables active ho jayenge
+                          components={{
+                            h1: (props) => <h1 className="text-2xl font-extrabold text-ink-navy mb-4 mt-2 block" {...props} />,
+                            h2: (props) => <h2 className="text-xl font-bold text-ink-navy border-b border-ink-navy/10 pb-1 mb-3 mt-4 block" {...props} />,
+                            h3: (props) => <h3 className="text-lg font-bold text-ink-navy mb-2 mt-3 block" {...props} />,
+                            p: (props) => <p className="text-sm text-ink-navy/90 leading-relaxed mb-3 block" {...props} />,
+                            strong: (props) => <strong className="font-bold text-ink-navy" {...props} />,
+                            em: (props) => <em className="italic" {...props} />,
+                            ul: (props) => <ul className="list-disc list-inside pl-4 space-y-1 mb-4 block" {...props} />,
+                            ol: (props) => <ol className="list-decimal list-inside pl-4 space-y-1 mb-4 block" {...props} />,
+                            li: (props) => <li className="text-sm text-ink-navy/95 list-item" {...props} />,
+                            table: (props) => (
+                              <div className="overflow-x-auto my-6 border border-ink-navy/10 rounded-lg">
+                                <table className="min-w-full divide-y divide-ink-navy/10" {...props} />
+                              </div>
+                            ),
+                            thead: (props) => <thead className="bg-paper" {...props} />,
+                            tbody: (props) => <tbody className="divide-y divide-ink-navy/10 bg-white" {...props} />,
+                            tr: (props) => <tr className="hover:bg-paper/30 transition-colors" {...props} />,
+                            th: (props) => <th className="px-4 py-2.5 text-left text-xs font-mono font-bold text-ink-navy uppercase tracking-wider border-r border-ink-navy/10 last:border-0" {...props} />,
+                            td: (props) => <td className="px-4 py-2 text-sm text-ink-navy/85 border-r border-ink-navy/10 last:border-0" {...props} />,
+                          }}
+                        >
+                          {preprocessMarkdown(conversionResult.structured_text || conversionResult.raw_combined_text || "")}
+                        </ReactMarkdown>
+                      ) : (
+                        <p className="text-gray-400 italic">No text extracted from this image. Please make sure the handwriting is clear.</p>
+                      )}
                     </div>
                   </div>
 
@@ -590,7 +611,7 @@ Photosynthesis is how green plants make chemical energy from light.
                       <span className="text-xs font-mono text-ink-blue/60 mr-2">Export:</span>
                       
                       <button
-                        onClick={() => handleOpenDownload(conversionResult.structured_text, conversionResult.filename || "Note")}
+                        onClick={() => handleOpenDownload(conversionResult.structured_text || conversionResult.raw_combined_text || "", conversionResult.filename || "Note")}
                         className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-mono font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
                       >
                         <Download className="w-3.5 h-3.5" />
@@ -600,7 +621,7 @@ Photosynthesis is how green plants make chemical energy from light.
                       {/* EXCEL Export option: Only show when tabular data is active */}
                       {hasTable && (
                         <button
-                          onClick={() => exportToExcel(conversionResult.structured_text, `ScanMyNotes_${conversionResult.filename || "Note"}.xlsx`)}
+                          onClick={() => exportToExcel(conversionResult.structured_text || conversionResult.raw_combined_text || "", `ScanMyNotes_${conversionResult.filename || "Note"}.xlsx`)}
                           className="bg-white border border-ink-navy/15 hover:border-emerald-700 text-emerald-800 text-xs font-mono font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
                         >
                           <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
@@ -683,7 +704,7 @@ Photosynthesis is how green plants make chemical energy from light.
 
             {/* Advanced features study suite Section */}
             <MoreToolsSection 
-              scannedText={conversionResult ? conversionResult.structured_text : (sessionPages.length > 0 ? sessionPages[sessionPages.length - 1].structuredText : "")} 
+              scannedText={getActiveTextForStudyTools()} 
               onLoadSampleText={handleLoadSample}
             />
 
