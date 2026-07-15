@@ -233,7 +233,7 @@ export default function App() {
       const resp = await processNotes(file);
       
       if (!resp || (!resp.structured_text && !resp.raw_combined_text)) {
-        throw new Error("Backend did not return any extracted text. Please check if your image has readable text.");
+        throw new Error("No text found"); // Handled below with user-friendly wording
       }
       
       setConversionResult(resp);
@@ -241,10 +241,19 @@ export default function App() {
       const updatedUsage = await fetchUsage().catch(() => null);
       if (updatedUsage) setUsage(updatedUsage);
     } catch (err: any) {
+      // Friendly, non-tech English message for laymen
       setConvertError(
-        <div className="space-y-1">
-          <p className="font-bold">Conversion Failed</p>
-          <p>{err.message || "Something went wrong while connecting to the scan server. Please try again."}</p>
+        <div className="space-y-1.5 text-left">
+          <p className="font-bold text-sm">We couldn't read your notes!</p>
+          <p className="text-xs leading-relaxed text-margin-red/90">
+            It looks like we couldn't find or scan any written text in this file. Please make sure that:
+          </p>
+          <ul className="list-disc list-inside text-xs space-y-1 mt-1 text-margin-red/80">
+            <li>The handwriting or typed text is clear and easy to read.</li>
+            <li>There is enough light on the page and the image isn't blurry.</li>
+            <li>You are uploading an image or PDF containing actual text, not a blank page.</li>
+          </ul>
+          <p className="text-[11px] italic mt-2 text-margin-red/70">Please take a clearer picture and try uploading again!</p>
         </div>
       );
     } finally {
@@ -468,17 +477,17 @@ export default function App() {
                 </div>
               )}
 
-              {/* Dynamic Error box targeting invalid formats and sizes gracefully */}
+              {/* Dynamic Error box targeting invalid formats, sizes, and failed conversion gracefully */}
               {convertError && (
                 <div className="bg-margin-red/10 border border-margin-red/20 text-margin-red text-xs p-5 rounded-xl mt-4 flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 flex-shrink-0 text-margin-red" />
-                  <div className="flex-grow">
+                  <div className="flex-grow text-left">
                     {convertError}
                     <button
                       onClick={handleCancelFile}
                       className="text-[10px] font-mono font-bold underline text-margin-red hover:text-red-800 block mt-3 uppercase tracking-wider"
                     >
-                      Try uploading correct format / File dobara upload karein
+                      Try uploading correct file / File dobara upload karein
                     </button>
                   </div>
                 </div>
