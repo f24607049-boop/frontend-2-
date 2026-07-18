@@ -40,3 +40,9 @@
     "vite": "^6.2.3"
   }
 }
+"dependencies": {
+  "browser-image-compression": "^2.0.1",   <-- (Yeh line add karni hai)
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0",
+  // baki libraries jo pehle se likhi hain...
+}
