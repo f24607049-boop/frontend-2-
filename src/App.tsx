@@ -25,6 +25,10 @@ import {
 // ReactMarkdown standard rendering
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm"; // Table support ke liye plugin import kiya
+
+// NAYA IMPORT: Image Compression Library
+import imageCompression from "browser-image-compression"; 
+
 import { processNotes, fetchUsage } from "./lib/api";
 import { exportToDocx, exportToExcel, exportToTxt, exportToPdf, detectMarkdownTable } from "./lib/exports";
 import { SavedSessionPage, ProcessResponse } from "./types";
@@ -45,8 +49,9 @@ export default function App() {
 
   // Conversion States
   const [isConverting, setIsConverting] = useState<boolean>(false);
+  const [loadingMessage, setLoadingMessage] = useState<string>("Scanning note layout..."); // NAYA STATE: Dynamic messages ke liye
   const [conversionResult, setConversionResult] = useState<ProcessResponse | null>(null);
-  const [convertError, setConvertError] = useState<React.ReactNode | null>(null); // Changed to support rich HTML/JSX error messages
+  const [convertError, setConvertError] = useState<React.ReactNode | null>(null); 
 
   // Session state (multi-page scan booklet)
   const [sessionPages, setSessionPages] = useState<SavedSessionPage[]>([]);
@@ -181,11 +186,10 @@ export default function App() {
       const url = URL.createObjectURL(selectedFile);
       setFilePreview(url);
     } else {
-      setFilePreview(null); // No direct preview for PDF, just show icon
+      setFilePreview(null);
     }
   };
 
-  // Trigger the download options modal
   const handleOpenDownload = (text: string, originalFilename?: string) => {
     setDownloadText(text);
     let baseName = "document";
@@ -198,7 +202,6 @@ export default function App() {
     setIsDownloadOpen(true);
   };
 
-  // Perform the actual download execution based on selection
   const handleExecuteDownload = async () => {
     if (!downloadText) return;
     
@@ -222,18 +225,37 @@ export default function App() {
     setConversionResult(null);
   };
 
-  // Convert execution
+  // Convert execution (UPDATED WITH COMPRESSION LOGIC)
   const handleConvert = async () => {
     if (!file) return;
     setIsConverting(true);
     setConvertError(null);
     setConversionResult(null);
+    setLoadingMessage("Scanning note layout..."); // Reset message
 
     try {
-      const resp = await processNotes(file);
+      let fileToProcess = file;
+
+      // PROGRESS 1: Image Compression
+      if (file.type.startsWith("image/")) {
+        setLoadingMessage("⏳ Compressing image to make upload faster...");
+        
+        const options = {
+          maxSizeMB: 0.5,           // 500KB tak compress karega
+          maxWidthOrHeight: 1024,   // AI ke liye perfect size
+          useWebWorker: true        // Browser hang nahi hoga
+        };
+
+        fileToProcess = await imageCompression(file, options);
+      }
+
+      // PROGRESS 2: Upload & AI Processing
+      setLoadingMessage("🧠 AI is extracting text & structuring notes (Please wait 10-20s)...");
+
+      const resp = await processNotes(fileToProcess);
       
       if (!resp || (!resp.structured_text && !resp.raw_combined_text)) {
-        throw new Error("No text found"); // Handled below with user-friendly wording
+        throw new Error("No text found");
       }
       
       setConversionResult(resp);
@@ -241,7 +263,6 @@ export default function App() {
       const updatedUsage = await fetchUsage().catch(() => null);
       if (updatedUsage) setUsage(updatedUsage);
     } catch (err: any) {
-      // Friendly, non-tech English message for laymen
       setConvertError(
         <div className="space-y-1.5 text-left">
           <p className="font-bold text-sm">We couldn't read your notes!</p>
@@ -261,7 +282,6 @@ export default function App() {
     }
   };
 
-  // Add parsed note page to session booklet
   const handleAddToSession = () => {
     if (!conversionResult) return;
 
@@ -463,13 +483,13 @@ export default function App() {
                 </div>
               )}
 
-              {/* Laser Animation Screen */}
+              {/* Laser Animation Screen (UPDATED FOR DYNAMIC MESSAGES) */}
               {isConverting && (
                 <div className="border border-ink-navy/10 rounded-xl py-12 px-6 bg-paper/20 flex flex-col items-center justify-center relative overflow-hidden min-h-[250px]">
                   <div className="absolute left-0 right-0 h-1 bg-stamp-green shadow-[0_0_15px_#3F6B4A] animate-pulse" style={{ animationDuration: "1.5s", top: "50%" }} />
                   <Loader2 className="w-10 h-10 text-marigold animate-spin mb-4" />
-                  <h3 className="text-lg font-display font-bold text-ink-navy animate-pulse">
-                    Scanning note layout...
+                  <h3 className="text-lg font-display font-bold text-ink-navy animate-pulse text-center px-4">
+                    {loadingMessage}
                   </h3>
                   <p className="text-xs text-ink-blue/70 mt-2 text-center max-w-xs font-mono">
                     Analyzing bilingual syntax, handwritten scripts and converting to clean structured Markdown...
@@ -477,7 +497,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* Dynamic Error box targeting invalid formats, sizes, and failed conversion gracefully */}
+              {/* Dynamic Error box */}
               {convertError && (
                 <div className="bg-margin-red/10 border border-margin-red/20 text-margin-red text-xs p-5 rounded-xl mt-4 flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 flex-shrink-0 text-margin-red" />
@@ -652,7 +672,7 @@ export default function App() {
             {/* Advanced Tools Suite */}
             <MoreToolsSection 
               scannedText={getActiveTextForStudyTools()} 
-              onLoadSampleText={() => {}} // Disabling mock trigger silently
+              onLoadSampleText={() => {}} 
             />
 
             {/* FAQ Area */}
